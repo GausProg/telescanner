@@ -14,12 +14,6 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 def start(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text=f"Привет! Ваш баланс: {balance}")
 
-'''
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn1 = types.KeyboardButton("Узнать баланс")
-    btn2 = types.KeyboardButton("Пополнить баланс")
-    markup.add(btn1, btn2)
-'''
 # функция для обработки команды account
 def account(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text=f"Ваш баланс: {balance}")
@@ -45,26 +39,21 @@ def photo_handler(update, context):
         context.bot.send_message(chat_id=update.effective_chat.id, text="Ваш баланс равен нулю, пополните баланс")
         return
 
-    photos = []
-    for photo in update.message.photo:
-        file_info = context.bot.get_file(photo.file_id)
-        downloaded_file = context.bot.download_file(file_info.file_path)
-        photos.append(downloaded_file)
-
-
-    '''photo = update.message.photo[-1].get_file()
-    ourphoto = photo.download('image.jpeg')'''
+    photo = update.message.photo[-1].get_file()
+    ourphoto = photo.download('image.jpeg')
+    from opsv import imagination
+    ourphoto = imagination(ourphoto)
 
     handler = zipfile.ZipFile("PhotoZip.zip", "w")
-    for ph in photos:
-        handler.write(ph)
+    handler.write(ourphoto)
     handler.close()
 
     context.bot.send_document(chat_id=update.effective_chat.id, document=open('PhotoZip.zip', 'rb'))
 
     balance = balance - 10
 
-
+def doc_handler(update, context):
+    return 
 
 # функция для обработки команды help
 def help(update, context):
@@ -90,6 +79,7 @@ start_handler = CommandHandler('start', start)
 account_handler = CommandHandler('account', account)
 text_handler = MessageHandler(Filters.text & (~Filters.command), text_handler)
 photo_handler = MessageHandler(Filters.photo, photo_handler)
+doc_handler = MessageHandler(Filters.document,  doc_handler)
 help_handler = CommandHandler('help', help)
 pay_handler = CommandHandler('pay', pay)
 unknown_handler = MessageHandler(Filters.command, unknown)
@@ -104,3 +94,4 @@ dispatcher.add_handler(unknown_handler)
 
 # запуск бота
 updater.start_polling()
+
