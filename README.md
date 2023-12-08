@@ -6,4 +6,4 @@
 2) telebot	0.0.5	0.0.5
 3) OpenCv
 4) Numpy
-Скрипт бота лежит в файле telegrambotscript.py
+Скрипт бота лежит в файле telegrambotscript.py, скрипт алгоритма в файле opsv.py, третий файл технический и скоро будет удален
