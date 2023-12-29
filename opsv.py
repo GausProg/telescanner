@@ -3,19 +3,17 @@ import numpy as np
 import base64
 from io import BytesIO
 
-def detect_and_crop_paper(image_path):
-    img = cv2.imread(image_path)
-
-    if img is None:
-        print(f"Error: Unable to load the image at path: {image_path}")
-        return None
-
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def find_contours(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    _, threshold = cv2.threshold(blurred, 150, 255, cv2.THRESH_BINARY)
+    
+    # Используем адаптивный порог для более гибкой настройки
+    _, threshold = cv2.threshold(blurred, 120, 255, cv2.THRESH_BINARY)
 
     contours, _ = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return contours
 
+def crop_and_transform(image, contours):
     if contours:
         max_contour = max(contours, key=cv2.contourArea)
         epsilon = 0.050 * cv2.arcLength(max_contour, True)
@@ -29,7 +27,10 @@ def detect_and_crop_paper(image_path):
         src_pts = box.astype("float32")
         dst_pts = np.array([[0, height - 1], [0, 0], [width - 1, 0], [width - 1, height - 1]], dtype="float32")
         M = cv2.getPerspectiveTransform(src_pts, dst_pts)
-        warped = cv2.warpPerspective(img, M, (width, height))
+        warped = cv2.warpPerspective(image, M, (width, height))
+
+        # Изменение размера изображения для уменьшения размера файла
+        warped = cv2.resize(warped, (width // 2, height // 2))
 
         _, img_encoded = cv2.imencode(".jpg", warped)
         img_bytes = img_encoded.tobytes()
@@ -38,6 +39,26 @@ def detect_and_crop_paper(image_path):
     else:
         print("No contours found in the image.")
         return None
+
+def detect_and_crop_paper(image_path, output_path="output_image.jpg"):
+    try:
+        img = cv2.imread(image_path)
+
+        if img is None:
+            raise ValueError(f"Error: Unable to load the image at path: {image_path}")
+
+        contours = find_contours(img)
+        result_image_bytes = crop_and_transform(img, contours)
+
+        if result_image_bytes is not None:
+            with open(output_path, "wb") as f:
+                f.write(result_image_bytes)
+                print(f"Output image saved successfully at {output_path}")
+    except Exception as e:
+        print(f"Error: {e}")
+        # Закрытие окон OpenCV
+    finally:
+        cv2.destroyAllWindows()
 
 def imagination(image_path):
     #image_path = "test2.jpg"
